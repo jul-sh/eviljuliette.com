@@ -2,10 +2,57 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>(ฅ`ｗ´ฅ)~</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        font-size: 26px;
+      }
+      body {
+        display: flex;
+        justify-content: left;
+        align-items: top;
+        min-height: 100vh;
+        margin: 0;
+        background-color: hsl(240deg, 100%, 24%);
+        font-family: "Pixelify Sans", "Courier New", monospace;
+        color: white;
+      }
+      .bsod {
+        text-align: left;
+        max-width: 80ch;
+        padding: 1rem;
+      }
+      .bsod h1 {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .bsod p {
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+      }
+      .bsod:before {
+        content: ":(";
+        display: block;
+        font-size: 3rem;
+        margin-bottom: 2rem;
+      }
+    </style>
   </head>
   <body>
-    ฅ(=චᆽච=ฅ)
+    <div class="bsod">
+      <p>
+        An error has occurred and your computer has been shut down to prevent
+        damage to your computer.
+      </p>
+      <p>Please try and restart by pressing Ctrl+Alt+Delete (or CTRL+R).</p>
+    </div>
   </body>
 </html>
