@@ -23,6 +23,7 @@
         background-color: hsl(240deg, 100%, 24%);
         font-family: "Pixelify Sans", "Courier New", monospace;
         color: white;
+        overflow-x: hidden;
       }
       .bsod {
         text-align: left;
@@ -44,15 +45,319 @@
         font-size: 3rem;
         margin-bottom: 2rem;
       }
+      #dubdub {
+        position: absolute;
+        width: 200px;
+        height: auto;
+        cursor: grab;
+        user-select: none;
+        z-index: 1000;
+        will-change: transform;
+      }
+      #dubdub:active {
+        cursor: grabbing;
+      }
     </style>
   </head>
   <body>
     <div class="bsod">
       <p>
         An error has occurred and your computer has been shut down to prevent
-        damage to your computer.
+        damage to the computer.
       </p>
       <p>Please try and restart by pressing Ctrl+Alt+Delete (or CTRL+R).</p>
     </div>
+    <img id="dubdub" src="dubdub.png" alt="Dubdub" draggable="false" />
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // BouncingImage class to encapsulate all the bouncing image functionality
+        class BouncingImage {
+          constructor(element) {
+            // DOM element
+            this.element = element;
+
+            // Dimensions
+            const rect = element.getBoundingClientRect();
+            this.width = rect.width;
+            this.height = rect.height;
+
+            // Document dimensions
+            this.docWidth = 0;
+            this.docHeight = 0;
+            this.updateDocDimensions();
+
+            // Position
+            this.x = Math.random() * (this.docWidth - this.width);
+            this.y =
+              (Math.random() * 0.6 + 0.2) * (this.docHeight - this.height);
+
+            // Velocity
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
+
+            // Physics constants
+            this.friction = 0.98;
+            this.bounce = 0.6;
+            this.gravity = 0.3;
+            this.minBounceVelocity = 1.3;
+
+            // Dragging state
+            this.isDragging = false;
+            this.offsetX = 0;
+            this.offsetY = 0;
+            this.lastClientX = 0;
+            this.lastClientY = 0;
+
+            // Animation
+            this.lastTimestamp = 0;
+            this.rafId = null;
+
+            // Throttling
+            this.isThrottled = false;
+
+            // Resize handling
+            this.resizeTimeout = null;
+            this.windowResizeTimeout = null;
+
+            // Initialize
+            this.setupEventListeners();
+            this.updatePosition();
+            this.startAnimation();
+          }
+
+          // Update document dimensions
+          updateDocDimensions() {
+            this.docWidth = Math.max(
+              document.documentElement.clientWidth,
+              document.documentElement.scrollWidth
+            );
+            this.docHeight = Math.max(
+              document.documentElement.clientHeight,
+              document.documentElement.scrollHeight
+            );
+          }
+
+          // Update element position using transform
+          updatePosition() {
+            this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+          }
+
+          // Animation loop
+          animate = (timestamp) => {
+            // Calculate delta time for smoother animation
+            const deltaTime = this.lastTimestamp
+              ? Math.min((timestamp - this.lastTimestamp) / 16, 2)
+              : 1;
+            this.lastTimestamp = timestamp;
+
+            if (!this.isDragging) {
+              this.applyPhysics(deltaTime);
+            }
+
+            this.rafId = requestAnimationFrame(this.animate);
+          };
+
+          // Apply physics calculations
+          applyPhysics(deltaTime) {
+            // Apply velocity
+            this.x += this.vx * deltaTime;
+            this.y += this.vy * deltaTime;
+
+            // Apply gravity
+            this.vy += this.gravity * deltaTime;
+
+            // Apply friction
+            this.vx *= Math.pow(this.friction, deltaTime);
+            this.vy *= Math.pow(this.friction, deltaTime);
+
+            // Handle horizontal boundaries
+            this.handleHorizontalBoundaries();
+
+            // Handle vertical boundaries
+            this.handleVerticalBoundaries();
+
+            // Stop if velocity is too low
+            if (Math.abs(this.vx) < 0.05 && Math.abs(this.vy) < 0.05) {
+              this.vx = 0;
+              this.vy = 0;
+            }
+
+            this.updatePosition();
+          }
+
+          // Handle horizontal boundary collisions
+          handleHorizontalBoundaries() {
+            if (this.x <= 0) {
+              this.x = 0;
+              this.vx = -this.vx * this.bounce;
+            } else if (this.x + this.width >= this.docWidth) {
+              this.x = this.docWidth - this.width;
+              this.vx = -this.vx * this.bounce;
+            }
+          }
+
+          // Handle vertical boundary collisions
+          handleVerticalBoundaries() {
+            if (this.y <= 0) {
+              this.y = 0;
+              this.vy = -this.vy * this.bounce;
+            } else if (this.y + this.height >= this.docHeight) {
+              this.y = this.docHeight - this.height;
+              this.vy = -this.vy * this.bounce;
+
+              // Add slight upward impulse to simulate resting on the floor
+              if (Math.abs(this.vy) < this.minBounceVelocity) {
+                this.vy = 0;
+                this.vx *= 0.9; // Further reduce horizontal movement when "grounded"
+              }
+            }
+          }
+
+          // Start dragging
+          startDrag(clientX, clientY) {
+            this.isDragging = true;
+            const rect = this.element.getBoundingClientRect();
+            this.offsetX = clientX - rect.left;
+            this.offsetY = clientY - rect.top;
+            this.element.style.cursor = "grabbing";
+            this.lastClientX = clientX;
+            this.lastClientY = clientY;
+          }
+
+          // Handle dragging
+          drag(clientX, clientY) {
+            if (this.isDragging) {
+              // Calculate position relative to the document, accounting for scroll
+              this.x = clientX - this.offsetX + window.scrollX;
+              this.y = clientY - this.offsetY + window.scrollY;
+              this.updatePosition();
+
+              // Calculate velocity based on mouse/touch movement
+              this.vx = (clientX - this.lastClientX) * 0.8; // Dampen velocity slightly
+              this.vy = (clientY - this.lastClientY) * 0.8;
+
+              this.lastClientX = clientX;
+              this.lastClientY = clientY;
+            }
+          }
+
+          // End dragging
+          endDrag() {
+            this.isDragging = false;
+            this.element.style.cursor = "grab";
+          }
+
+          // Throttled drag handler
+          throttledDrag(clientX, clientY) {
+            if (!this.isThrottled) {
+              this.isThrottled = true;
+              this.drag(clientX, clientY);
+              setTimeout(() => {
+                this.isThrottled = false;
+              }, 16); // ~60fps
+            }
+          }
+
+          // Start animation
+          startAnimation() {
+            this.lastTimestamp = 0;
+            this.rafId = requestAnimationFrame(this.animate);
+          }
+
+          // Stop animation
+          stopAnimation() {
+            if (this.rafId) {
+              cancelAnimationFrame(this.rafId);
+              this.rafId = null;
+            }
+          }
+
+          // Handle window resize
+          handleResize() {
+            this.updateDocDimensions();
+
+            // Ensure the image stays within bounds when window is resized
+            if (this.x + this.width > this.docWidth) {
+              this.x = this.docWidth - this.width;
+            }
+            if (this.y + this.height > this.docHeight) {
+              this.y = this.docHeight - this.height;
+            }
+            this.updatePosition();
+          }
+
+          // Set up all event listeners
+          setupEventListeners() {
+            // Mouse events
+            this.element.addEventListener("mousedown", (e) => {
+              this.startDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener("mousemove", (e) => {
+              this.throttledDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener("mouseup", () => this.endDrag());
+
+            // Touch events
+            this.element.addEventListener(
+              "touchstart",
+              (e) => {
+                e.preventDefault();
+                this.startDrag(e.touches[0].clientX, e.touches[0].clientY);
+              },
+              { passive: false }
+            );
+
+            document.addEventListener(
+              "touchmove",
+              (e) => {
+                e.preventDefault();
+                this.throttledDrag(e.touches[0].clientX, e.touches[0].clientY);
+              },
+              { passive: false }
+            );
+
+            document.addEventListener("touchend", () => this.endDrag());
+
+            // Resize observer
+            const resizeObserver = new ResizeObserver((entries) => {
+              if (entries && entries.length > 0) {
+                clearTimeout(this.resizeTimeout);
+                this.resizeTimeout = setTimeout(() => {
+                  const newRect = entries[0].contentRect;
+                  this.width = newRect.width;
+                  this.height = newRect.height;
+                }, 100);
+              }
+            });
+            resizeObserver.observe(this.element);
+
+            // Window resize
+            window.addEventListener("resize", () => {
+              clearTimeout(this.windowResizeTimeout);
+              this.windowResizeTimeout = setTimeout(
+                () => this.handleResize(),
+                100
+              );
+            });
+
+            // Visibility change
+            document.addEventListener("visibilitychange", () => {
+              if (document.hidden) {
+                this.stopAnimation();
+              } else {
+                this.startAnimation();
+              }
+            });
+          }
+        }
+
+        // Initialize the bouncing image
+        const dubdub = document.getElementById("dubdub");
+        new BouncingImage(dubdub);
+      });
+    </script>
   </body>
 </html>
