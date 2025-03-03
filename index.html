@@ -128,14 +128,52 @@
 
           // Update document dimensions
           updateDocDimensions() {
-            this.docWidth = Math.max(
-              document.documentElement.clientWidth,
-              document.documentElement.scrollWidth
-            );
-            this.docHeight = Math.max(
-              document.documentElement.clientHeight,
-              document.documentElement.scrollHeight
-            );
+            // Base dimensions from visual viewport if available
+            const visualViewport = window.visualViewport || {
+              width: window.innerWidth,
+              height: window.innerHeight,
+              offsetLeft: 0,
+              offsetTop: 0,
+            };
+
+            this.docWidth = visualViewport.width;
+            this.docHeight = visualViewport.height;
+
+            // Account for safe areas (notches, home indicators, etc.)
+            this.safeAreaTop = 0;
+            this.safeAreaRight = 0;
+            this.safeAreaBottom = 0;
+            this.safeAreaLeft = 0;
+
+            // Try to get CSS environment variables for safe areas
+            if (
+              CSS &&
+              CSS.supports &&
+              CSS.supports("padding-top: env(safe-area-inset-top)")
+            ) {
+              // Get safe area insets if available
+              const style = getComputedStyle(document.documentElement);
+              const getPxValue = (propValue) => {
+                return parseInt(propValue.replace("px", "")) || 0;
+              };
+
+              this.safeAreaTop = getPxValue(
+                style.getPropertyValue("--safe-area-inset-top")
+              );
+              this.safeAreaRight = getPxValue(
+                style.getPropertyValue("--safe-area-inset-right")
+              );
+              this.safeAreaBottom = getPxValue(
+                style.getPropertyValue("--safe-area-inset-bottom")
+              );
+              this.safeAreaLeft = getPxValue(
+                style.getPropertyValue("--safe-area-inset-left")
+              );
+            }
+
+            // Apply safe areas to viewport
+            this.docWidth -= this.safeAreaLeft + this.safeAreaRight;
+            this.docHeight -= this.safeAreaTop + this.safeAreaBottom;
           }
 
           // Update element position using transform
