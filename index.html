@@ -45,7 +45,7 @@
         font-size: 3rem;
         margin-bottom: 2rem;
       }
-      #dubdub {
+      #dubdub-container {
         position: absolute;
         width: 200px;
         height: auto;
@@ -55,8 +55,21 @@
         will-change: transform;
         touch-action: none;
       }
-      #dubdub:active {
+      #dubdub-container:active {
         cursor: grabbing;
+      }
+      .dubdub-clone {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        pointer-events: none; /* Ensure clones don't interfere with dragging */
+      }
+      #dubdub {
+        width: 100%;
+        height: 100%;
+        display: block; /* Remove any extra spacing below the image */
       }
       #fps {
         position: fixed;
@@ -78,13 +91,15 @@
       </p>
       <p>Please try and restart by pressing Ctrl+Alt+Delete (or CTRL+R).</p>
     </div>
-    <img
-      id="dubdub"
-      src="dubdub.png"
-      alt="Dubdub"
-      draggable="false"
-      loading="eager"
-    />
+    <div id="dubdub-container">
+      <img
+        id="dubdub"
+        src="dubdub.png"
+        alt="Dubdub"
+        draggable="false"
+        loading="eager"
+      />
+    </div>
     <div id="fps"></div>
 
     <script>
@@ -93,6 +108,10 @@
           constructor(element) {
             // DOM element
             this.element = element;
+            this.container = document.getElementById("dubdub-container"); // Reference to the container
+
+            // DOM elements for clones
+            this.clones = [];
 
             // Physics state
             this.x = 0;
@@ -150,6 +169,9 @@
             this.vx = (Math.random() - 0.5) * 10;
             this.vy = (Math.random() - 0.5) * 10;
 
+            // Create clones for motion blur
+            this.createClones();
+
             // Update position in DOM
             this.updateElementPosition();
 
@@ -160,8 +182,48 @@
             this.startAnimation();
           }
 
+          createClones() {
+            // Create 10 clones with decreasing opacity
+            for (let i = 0; i < 10; i++) {
+              const clone = this.element.cloneNode(true);
+              clone.classList.add("dubdub-clone");
+              clone.removeAttribute("id"); // Remove ID to avoid duplicates
+              clone.style.opacity = (10 - i) / 30; // Decreasing opacity: 0.33, 0.3, 0.27, etc.
+              this.container.appendChild(clone);
+              this.clones.push(clone);
+            }
+          }
+
           updateElementPosition() {
-            this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+            this.container.style.transform = `translate(${this.x}px, ${this.y}px)`;
+            this.updateClonePositions();
+          }
+
+          updateClonePositions() {
+            // Only apply motion blur if moving fast enough
+            const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            // Adjust this value to control the sensitivity
+            let blurThreshold = 55 + (this.fps - 30) * 0.2; // Increase threshold with higher FPS, start adjusting above 30 FPS
+            blurThreshold = Math.max(5, blurThreshold); // Ensure a minimum threshold
+            blurThreshold = Math.min(25, blurThreshold); // Cap the threshold
+
+            if (speed > blurThreshold) {
+              // Stagger clone positions for motion blur
+              for (let i = 0; i < this.clones.length; i++) {
+                const clone = this.clones[i];
+                const BLUR_INTENSITY = 0.05; // Adjust this value to control the intensity of the motion blur effect.  Higher values create a more pronounced blur.
+                const offsetX = -this.vx * (i + 1) * BLUR_INTENSITY;
+                const offsetY = -this.vy * (i + 1) * BLUR_INTENSITY;
+                clone.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+                clone.style.display = "block"; // Make sure clones are visible
+              }
+            } else {
+              // Hide clones if not moving fast enough
+              for (let i = 0; i < this.clones.length; i++) {
+                const clone = this.clones[i];
+                clone.style.display = "none";
+              }
+            }
           }
 
           animate = (timestamp) => {
@@ -249,7 +311,7 @@
 
           startDrag(clientX, clientY) {
             this.isDragging = true;
-            this.element.style.cursor = "grabbing";
+            this.container.style.cursor = "grabbing";
 
             // Calculate offset within the element
             const rect = this.element.getBoundingClientRect();
@@ -288,7 +350,7 @@
           endDrag() {
             if (this.isDragging) {
               this.isDragging = false;
-              this.element.style.cursor = "grab";
+              this.container.style.cursor = "grab";
 
               // Apply spring-back if out of bounds
               const isOutsideX =
@@ -332,7 +394,7 @@
 
           setupEventListeners() {
             // Mouse events
-            this.element.addEventListener("mousedown", (e) => {
+            this.container.addEventListener("mousedown", (e) => {
               e.preventDefault();
               this.isTouch = false;
               this.startDrag(e.clientX, e.clientY);
@@ -357,7 +419,7 @@
             );
 
             // Touch events
-            this.element.addEventListener(
+            this.container.addEventListener(
               "touchstart",
               (e) => {
                 e.preventDefault();
