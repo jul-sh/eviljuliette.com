@@ -284,6 +284,33 @@
           endDrag() {
             this.isDragging = false;
             this.element.style.cursor = "grab";
+
+            // Check if the image is outside boundaries and add spring-back animation
+            const isOutsideX =
+              this.x < 0 || this.x + this.width > this.docWidth;
+            const isOutsideY =
+              this.y < 0 || this.y + this.height > this.docHeight;
+
+            if (isOutsideX || isOutsideY) {
+              // Calculate target position (where it should spring back to)
+              const targetX = Math.max(
+                0,
+                Math.min(this.x, this.docWidth - this.width)
+              );
+              const targetY = Math.max(
+                0,
+                Math.min(this.y, this.docHeight - this.height)
+              );
+
+              // Calculate distance from current position to target
+              const distanceX = targetX - this.x;
+              const distanceY = targetY - this.y;
+
+              // Set velocity proportional to the distance (like a spring)
+              // The further out of bounds, the more force to spring back
+              this.vx = distanceX * 0.3;
+              this.vy = distanceY * 0.3;
+            }
           }
 
           // Throttled drag handler
