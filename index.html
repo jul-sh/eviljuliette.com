@@ -58,6 +58,16 @@
       #dubdub:active {
         cursor: grabbing;
       }
+      #fps {
+        position: fixed;
+        top: 0;
+        right: 0;
+        padding: 0.2rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.8rem;
+        z-index: 9999;
+        pointer-events: none; /* Prevent clicks */
+      }
     </style>
   </head>
   <body>
@@ -75,6 +85,7 @@
       draggable="false"
       loading="eager"
     />
+    <div id="fps"></div>
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -103,6 +114,11 @@
             this.lastDragX = 0;
             this.lastDragY = 0;
             this.isTouch = false; // Flag for touch vs. mouse
+
+            // FPS
+            this.fps = 0;
+            this.frames = [];
+            this.fpsElement = document.getElementById("fps");
 
             // Initialize
             this.init();
@@ -175,11 +191,26 @@
               this.updateElementPosition();
             }
 
+            // Calculate FPS
+            this.calculateFPS(timestamp);
+
             // Continue animation
             if (this.isAnimating) {
               this.rafId = requestAnimationFrame(this.animate);
             }
           };
+
+          calculateFPS(timestamp) {
+            while (
+              this.frames.length > 0 &&
+              this.frames[0] <= timestamp - 1000
+            ) {
+              this.frames.shift();
+            }
+            this.frames.push(timestamp);
+            this.fps = this.frames.length;
+            this.fpsElement.textContent = `${this.fps} FPS`;
+          }
 
           handleBoundaries() {
             // Horizontal boundaries
