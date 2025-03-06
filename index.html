@@ -148,32 +148,30 @@
           }
 
           animate = (timestamp) => {
-            // Calculate delta time with safety cap
+            // Calculate delta time.  No cap needed, we want to use the *actual* time passed.
             const deltaTime = this.lastTimestamp
-              ? Math.min((timestamp - this.lastTimestamp) / 16, 2)
-              : 1;
+              ? (timestamp - this.lastTimestamp) / 1000 // Convert milliseconds to seconds
+              : 1 / 60; // Assume 60 FPS for the first frame
             this.lastTimestamp = timestamp;
 
             // Only update physics if not being dragged
             if (!this.isDragging) {
-              // Apply velocity
-              this.x += this.vx * deltaTime;
-              this.y += this.vy * deltaTime;
+              // Apply velocity, scaled by deltaTime
+              this.x += this.vx * 60 * deltaTime;
+              this.y += this.vy * 60 * deltaTime;
 
-              // Apply gravity
-              this.vy += this.gravity * deltaTime;
+              // Apply gravity, scaled by deltaTime
+              this.vy += this.gravity * 60 * deltaTime;
 
-              // Apply friction
-              this.vx *= Math.pow(this.friction, deltaTime);
-              this.vy *= Math.pow(this.friction, deltaTime);
+              // Apply friction, scaled by deltaTime
+              this.vx *= Math.pow(this.friction, 60 * deltaTime);
+              this.vy *= Math.pow(this.friction, 60 * deltaTime);
 
               // Handle boundaries
               this.handleBoundaries();
 
               // Update DOM
               this.updateElementPosition();
-
-              // Check if should sleep (very low movement and at bottom)
             }
 
             // Continue animation
