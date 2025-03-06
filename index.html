@@ -102,6 +102,7 @@
             this.dragOffsetY = 0;
             this.lastDragX = 0;
             this.lastDragY = 0;
+            this.isTouch = false; // Flag for touch vs. mouse
 
             // Initialize
             this.init();
@@ -235,9 +236,10 @@
               const newX = clientX - this.dragOffsetX;
               const newY = clientY - this.dragOffsetY;
 
-              // Update velocity based on movement
-              this.vx = (newX - this.x) * 0.8;
-              this.vy = (newY - this.y) * 0.8;
+              // Update velocity based on movement and input type
+              const dragMultiplier = this.isTouch ? 1.4 : 0.8; // Increase velocity for touch
+              this.vx = (newX - this.x) * dragMultiplier;
+              this.vy = (newY - this.y) * dragMultiplier;
 
               // Update position
               this.x = newX;
@@ -301,6 +303,7 @@
             // Mouse events
             this.element.addEventListener("mousedown", (e) => {
               e.preventDefault();
+              this.isTouch = false;
               this.startDrag(e.clientX, e.clientY);
             });
 
@@ -327,6 +330,7 @@
               "touchstart",
               (e) => {
                 e.preventDefault();
+                this.isTouch = true;
                 const touch = e.touches[0];
                 this.startDrag(touch.clientX, touch.clientY);
               },
